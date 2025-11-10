@@ -1,0 +1,225 @@
+body{
+    font-family: Arial, Helvetica, sans-serif;
+    background-color: #f7f7f7;
+    padding: 20px;
+    animation: fadeIn 0.4s ease;
+}
+.top-bar{
+    background-color: #1a5d57;
+    color:white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+    border-radius: 6px;
+    margin-bottom: 20px;
+    box-sizing: border-box;
+}
+.left-buttons{
+    display: flex;
+    gap: 10px;
+}
+.top-bar button{
+    background-color: #17776f;
+    border: none;
+    padding: 8px 14px;
+    border-radius: 6px;
+    color: white;
+    cursor: pointer;
+    transition: 0.3s;
+}
+.top-bar button:hover{
+    background-color: #0d4d46;
+    transform: scale(1.05);
+    box-shadow: 0 3px 6px rgba(0,0,0,0.2);
+}
+.top-bar button.active{
+    background-color: #0d4d46;
+    font-weight: bold;
+    border: 2px solid #0b3e39;
+}
+h1{
+    color: #1a5d57;
+}
+.surah-card{
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+    margin-bottom: 10px;
+}
+button{
+    background: #1a5d57;
+    color: white;
+    padding: 6px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+button:hover{
+    background:#17776f;
+}
+.about-card{
+    background: #fff;
+    padding:20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    max-width: 800px;
+    margin: 20px auto;
+    line-height: 1.6;
+}
+.about-footer{
+    text-align:center;
+    margin-top: 30px;
+    color:#555;
+    font-size:14px;
+}
+#surahList{
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px,1fr)); /*untuk susunn dlm grid*/
+    gap: 10px;
+    padding: 10px;
+}
+.surah-item{
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    text-align: center;
+    transition: 0.3s;
+}
+.surah-item:hover{
+    background: #e8f5e9;
+    transform: scale(1.03);
+}
+h2.h3{
+    color: #1a5d57;
+}
+.surah-card:hover, .about-card:hover{
+    transform: translateY(-3px);
+    box-shadow: 0 6px 10px rgba(0,0,0,0.15);
+    transition: 0.3s ease;
+}
+.journal-container{
+    max-width: center;
+    color:#1a5d57;
+    margin-bottom: 25px;
+}
+.input{
+    width: 100%;
+    padding:10px;
+    margin-top:8px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size:15px;
+    box-sizing: border-box;
+}
+.input:focus{
+    border-color: #1a5d57;
+    outline: none;
+    box-shadow: 0 0 3px rgba(26,93,87,0.4);
+}
+.button{
+    background:#1a5d57;
+    color:white;
+    border:none;
+    padding:10px 16px;
+    margin-right: 8px;
+    border-radius: 6px;
+    cursor:pointer;
+    transition: background 0.2s ease;
+}
+.button:hover{
+    
+    border:1px solid #ddd;
+    border-radius: 6px;
+    padding: 12px;
+    margin-bottom: 10px;
+}
+.note strong{
+    color: #1a5d57;
+}
+.small{
+    color: #777;
+    font-style: italic;
+}
+@media(max-width: 600px){
+    body{
+        padding:10px;
+    }
+    .top-bar{
+        flex-direction: column;
+        gap: 8px;
+        text-align:center;
+    }
+    #surahList{
+        grid-template-columns: 1fr;
+    }
+}
+@keyframes fadeIn {
+    from{
+        opacity: 0;
+        transform:translateY(10px);
+    }
+    to{
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+.ayah{
+    margin-bottom: 16px;
+    padding: 10px;
+    background: #fafafa;
+    border-radius: 8px;
+}
+.arabic{
+    font-size: 1.4em;
+    text-align: right;
+    font-family: 'Scheherazade',serif;
+    direction: rtl;
+    margin-bottom: 5px;
+}
+.translation{
+    font-size: 1em;
+    color: #333;
+}
+/* style.css */
+.logo {
+  position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 700px;         /* saiz logo besar tapi bukan terlalu besar */
+    opacity: 0.08;        /* sangat subtle */
+    filter: blur(1.4px);    /* kabur lembut */
+    pointer-events: none; /* supaya click kat atas page tetap boleh */
+    z-index: 0;
+}
+#dailyAyah{
+    background:#e8f5e9;
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 20px;
+    text-align: center;
+}
+#dailyAyah p{
+    font-style: italic;
+    color: #333;
+}
+#reflectBtn{
+    margin-top: 10px;
+    background-color: #1a5d57;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 12px;
+    color: white;
+    cursor:pointer;
+}
+#reflectBtn:hover{
+    background-color: #17776f;
+}
+.ayah.current{
+    background: linear-gradient(90deg,#c4f0ff,#a0dfff);
+    transition: background 0.5s, transform 0.3s;
+    transform: scale(1.02);
+    border-radius: 5px;
+    padding: 5px;
+}
+

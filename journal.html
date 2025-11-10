@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quran Journal -My Notes</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <img src="alquran.jpg" alt="logo" class="logo">
+    <div class="top-bar">
+        <div class="left-buttons">
+            <button onclick="window.location.href='index.html'">Back</button>
+            <button class="active">My Notes</button>
+        </div>
+        <button onclick="window.location.href='about.html'">About</button>
+    </div>
+
+    <h1>📖🕋 My Quran Journal</h1>
+
+    <div class="card">
+        <h3>Add / Edit Note</h3>
+        <select id="surahNum" class="input">
+            <option value="">---Select Surah---</option>
+        </select>
+
+        <!--Mood Dropdown-->
+        <select id="moodSelect" class="input">
+            <option value="">---Select Mood---</option>
+            <option value="calm">🪷 Calm 🪷</option>
+            <option value="sad">🌧️ Sad 🌧️</option>
+            <option value="grateful">🌈 grateful 🌈</option>
+        </select>
+
+        <textarea id="noteText" class="input" rows="4" placeholder="Write your reflection....."></textarea>
+        <div style="margin-top:10px">
+            <button id="saveBtn" class="button">Save</button>
+            <button id="clearBtn" class="button" style="background:#777">Clear</button>
+        </div>
+    </div>
+
+    <div class="card" style="margin-top:20px">
+        <h3>Saved Notes</h3>
+        <div id="noteList"></div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded",async()=>{
+             const params = new URLSearchParams(window.location.search);
+        const selectedSurah = params.get("surah");
+
+        if(selectedSurah){
+            document.addEventListener("DOMContentLoaded", ()=> {
+                document.getElementById("surahNum").value = selectedSurah;
+            });
+        }
+        const surahNum = document.getElementById("surahNum");
+        const noteText = document.getElementById("noteText");
+        const saveBtn = document.getElementById("saveBtn");
+        const clearBtn = document.getElementById("clearBtn");
+        const noteList = document.getElementById("noteList");
+
+        let editId = null;
+        let surahList = []; //simpan semua surah
+
+        const moodColors ={
+            calm : "#d4edda",
+            sad : "#d6e0f0",
+            grateful : "#fff8b0"
+        };
+
+        function escapeHTML(str) {
+            if (!str) return '';
+            return str
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");   
+        };
+
+        async function populateSurahList(){
+            try{
+                const res = await fetch('https://api.alquran.cloud/v1/surah');
+                const data = await res.json();
+                surahList = data.data;
+                const dropdown = document.getElementById("surahNum");
+
+                surahList.forEach(s => {
+                    const opt = document.createElement("option");
+                    opt.value = s.number;
+                    opt.textContent = `${s.number}. ${s.englishName} (${s.name})`;
+                    dropdown.appendChild(opt);
+                });
+
+                if(selectedSurah) surahNum.value = selectedSurah;
+
+            }catch(err){
+                console.log("Failed to load surah list", err);
+            }
+        }
+       
+        async function loadNotes(){
+            const notes = await window.api.readNotes();
+            noteList.innerHTML = notes.length
+                ? notes.map (n =>{
+                    const surah = surahList.find(s => Number(s.number) === Number(n.surahNumber));
+                    const surahName = surah ? `${surah.number}. ${surah.englishName} (${surah.name})`:`Surah ${n.surahNumber}`;
+                    const moodColor = moodColors[n.mood] || "#fff";
+                    return `
+                    <div class="note" style="background:${moodColor}; padding:10px; border-radius:8px; margin-bottom:10px;">
+                        <strong>${surahName}</strong><br>${escapeHTML(n.text)}<br>
+                        <em>${n.mood ? "Mood: " + n.mood : ""}</em><br>
+                        <button onclick="editNote(${n.id})">Edit</button>
+                        <button onclick="deleteNote(${n.id})" style="background:#c0392b;color:white">Delete</button>
+                    </div>
+                `;
+            }).join('')
+            : '<p class="small">No notes yet.</p>';
+        }   
+
+        saveBtn.addEventListener('click',async () => {
+            const num = Number(surahNum.value);
+            const text = noteText.value.trim();
+            const mood = document.getElementById("moodSelect").value;
+            if (!num || !text || !mood )
+            return alert("Please fill both fields.");
+            
+            if(editId){
+                await window.api.updateNote(editId, {surahNumber: num, text, mood});
+                alert ("Note updated successfully");
+                editId = null;
+            }else{
+                await window.api.addNote({surahNumber: num, text, mood});
+                alert ("Note added successfully");
+            }
+            surahNum.value = '';
+            noteText.value = '';
+            moodSelect.value = '';
+            loadNotes();
+        });
+
+        clearBtn.addEventListener("click" , () => {
+            editId = null;
+            surahNum.value = '';
+            noteText.value = '';
+        });
+        
+        window.editNote = async (id) => {
+            const notes = await window.api.readNotes();
+            const n = notes.find(x => x.id == id);
+            if (!n) return;
+            editId = id;
+            surahNum.value = n.surahNumber;
+            noteText.value = n.text;
+            moodSelect.value = n.mood ||'';
+        };
+
+        window.deleteNote = async (id) => {
+            if(confirm("Delete this note?")){
+                await window.api.deleteNote(id);
+                alert("Note deleted!");
+                loadNotes();
+            }
+        };
+        async function init(){
+            await populateSurahList();
+            await loadNotes();
+        }
+        init ();
+    
+
+    });
+       
+    </script>
+    
+</body>
+</html>

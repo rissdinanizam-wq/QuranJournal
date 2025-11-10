@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Surah Details</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <img src="alquran.jpg" alt="logo" class="logo">
+    <div class="top-bar">
+        <div class="left-buttons">
+            <button class="active">Back</button>
+            <button onclick="window.location.href='journal.html'">My Notes</button>
+        </div>
+        <button onclick="window.location.href='about.html'">About</button>
+    </div>
+
+    <div class="card" id="dailyAyah">
+        <h2>📖Daily Ayah Reflection📖</h2>
+        <p id="ayahText">Loading today's ayah.....</p>
+        <p id="ayahTrans"></p>
+        <button id="reflectBtn" class="button">Reflect on this Ayah</button>
+
+    </div>
+
+    <h1 id="title">Surah Details</h1>
+    <div id="surahList" class="card">Loading surah list.....</div>
+    <script>
+        const surahList = document.getElementById("surahList");
+
+        async function loadSurahList(){
+            try{
+                const res = await fetch (`https://api.alquran.cloud/v1/surah`);
+                const data = await res.json();
+                const surahs = data.data;
+        
+              
+                surahList.innerHTML = surahs.map(s => `
+                    <div class="surah-item">
+                        <h3>${s.number}. ${s.englishName}</h3>
+                        <p>${s.englishNameTranslation}</p>
+                        <button onclick="window.location.href='surah.html?num=${s.number}'">View Details</button>
+                    </div>
+                `).join('');
+            }catch(err){
+                surahList.innerHTML = `<p style='color:red'>Error loading list: ${err.message}</p>`;
+            }
+        }
+        async function loadDailyAyah(){
+            try{
+                const res = await fetch(`https://api.alquran.cloud/v1/ayah/random/en.asad?nocache=${Date.now()}`);
+                const data = await res.json();
+                const ayah = data.data;
+
+                document.getElementById("ayahText").textContent =
+                `${ayah.surah.englishName} (${ayah.surah.name}) - Ayah ${ayah.numberInSurah}`;
+                document.getElementById("ayahTrans").textContent = `"${ayah.text}"`;
+
+                //simpan surah number dalam journal
+                document.getElementById("reflectBtn").onclick = () => {
+                    window.location.href = `surah.html?num=${ayah.surah.number}&ayah=${ayah.numberInSurah}`;
+                };
+            }catch(err){
+                document.getElementById("ayahText").textContent = "Failed to load ayah.";
+                console.error(err);
+            }
+        }
+        loadDailyAyah();
+        loadSurahList();
+    </script>
+</body>
+</html>

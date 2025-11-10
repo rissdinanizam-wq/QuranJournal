@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Surah Details</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Scheherazade&display=swap" rel="stylesheet">
+</head>
+<body>
+    <img src="alquran.jpg" alt="logo" class="logo">
+    <div class="top-bar">
+        <div class="left-buttons">
+            <button onclick="window.location.href='index.html'">Back</button>
+            <button onclick="window.location.href='journal.html'">My Notes</button>
+        </div>
+        <button onclick="window.location.href='about.html'">About</button>
+    </div>
+    <h1>Surah Details</h1>
+    <div id="surahInfo" class="card">Loading....</div> <!--container-->
+
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const surahNum = params.get("num");
+        const surahInfo = document.getElementById("surahInfo");
+        
+        //main function to load surah details
+        async function fetchSurahDetails(){
+            if (!surahNum){
+                surahInfo.innerHTML = "<p style='color:red'> No surah selected. Please go back to the list.</p>";
+                return;
+            }
+            try{
+                //fetch main surah info
+                const res = await fetch(`https://api.alquran.cloud/v1/surah/${surahNum}`);
+                const data = await res.json();
+
+                if (data.code !== 200){
+                    surahInfo.innerHTML = `<p style='color:red'> Failed to load surah information.</p>`;
+                    return;
+                }
+                const s = data.data;
+                
+                //display surah information
+                surahInfo.innerHTML = `
+                    <h2>${s.number}. ${s.englishName} (${s.name})</h2>
+                    <p><strong>Translation:</strong> ${s.englishNameTranslation}</p>
+                    <p><strong>Number of Ayahs:</strong> ${s.numberOfAyahs}</p>
+                    <p><strong>Revelation Type:</strong> ${s.revelationType}</p>
+
+                    <label for="qariSelect"><strong>Choose Qari(Reciter):</strong></label>
+                    <select id="qariSelect" style="margin:5px;">
+                        <option value="ar.alafasy">Mishary Rashid Al-Afasy</option>
+                        <option value="ar.abdulbasitmurattal">Abdul Basit (Murattal)</option>
+                        <option value="ar.hudhaify">Hudhaify</option>
+                        <option value="ar.minshawi">Minshawi</option>
+                    </select>
+                    <button id="playAudioBtn" class="button">▶️ Play Audio</button>
+
+                    <hr>
+                    <h3>📖 Surah Verses</h3>
+                    <div id="ayahList">Loading verses...</div>
+                `;
+                await loadAyahs(surahNum); //load verses after surah info display
+                setupAudioButton(s.number,s.englishName);//enable qari audio player
+
+            }catch (err){
+                surahInfo.innerHTML = `<p style='color:red'>Error: ${err.message}</p>`;
+            }
+        }
+        //load ayah list (arabic + english + audio)
+        async function loadAyahs(surahNum){
+            try{
+                const resVerses = await fetch(`https://api.alquran.cloud/v1/surah/${surahNum}/editions/ar.alafasy,en.asad`);
+                const dataVerses = await resVerses.json();
+                 
+                const arabicAyahs = dataVerses.data[0].ayahs;
+                const englishAyahs = dataVerses.data[1].ayahs;
+                const ayahList = document.getElementById("ayahList");
+
+                ayahList.innerHTML = arabicAyahs.map((a,i) => `
+                    <div class="ayah" data-ayah="${a.numberInSurah}">
+                        <p class="arabic" style="font-family:'Scheherazade', serif; font-size:20px;">${a.text}</p>
+                        <p class="translation"><strong>(${a.numberInSurah})</strong>${englishAyahs[i].text}</p>
+                        
+                        <hr>
+                    </div>
+                `).join('');
+
+                const reflectBtn = document.createElement("button");
+                reflectBtn.textContent = "Reflect on this Surah";
+                reflectBtn.classList.add("button");
+                reflectBtn.addEventListener("click", () =>{
+                    const currentAyahE1 = document.querySelector(".ayah.current");
+                    const ayahParam = currentAyahE1 ? currentAyahE1.dataset.ayah : '';
+                    let url = `journal.html?surah=${surahNum}`;
+                    if(ayahParam) url += `&ayah=${ayahParam}`;
+                    window.location.href = url;
+                });
+                ayahList.insertAdjacentElement("afterend",reflectBtn);
+
+                const targetAyah = params.get("ayah");
+                if(targetAyah){
+                    setTimeout(()=>{
+                        const el = document.querySelector(`[data-ayah="${targetAyah}"]`);
+                        if (el) el.scrollIntoView({behavior: "smooth" ,block: "center"});
+                    }, 500);
+                }
+            }catch(err){
+                document.getElementById("ayahList").innerHTML = `<p style='color:red'>Error loading verses: ${err.message}</p>`;
+            }       
+        }  
+            //audio selector
+            function setupAudioButton(surahNum,surahName){
+                const playBtn = document.getElementById("playAudioBtn");
+                const qariSelect = document.getElementById("qariSelect");
+                
+                const stopBtn = document.createElement("button");
+                stopBtn.textContent = "⏹️ Stop Audio";
+                stopBtn.classList.add("button");
+                stopBtn.style.marginLeft = "8px";
+                playBtn.insertAdjacentElement("afterend", stopBtn)
+
+                const resumeBtn = document.createElement("button");
+                resumeBtn.textContent = "⏯️ Resume Audio";
+                resumeBtn.classList.add("button");
+                resumeBtn.style.marginLeft = "8px";
+                stopBtn.insertAdjacentElement("afterend", resumeBtn);
+
+                let currentAudio = null; //untuk simpan audio sedang main
+                let ayahIndex = 0; //ayat semasa
+                let ayahAudios = []; //senarai audio semua ayat
+                let isPaused = false;
+
+                playBtn.addEventListener("click", async() =>{
+                    const selectedQari = qariSelect.value;
+                    try{
+                        //hentikan audio lama kalau ada
+                        if(currentAudio){
+                            currentAudio.pause();
+                            currentAudio = null;
+                        }
+
+                        if(ayahAudios.length === 0){
+                            const audioRes = await fetch(`https://api.alquran.cloud/v1/surah/${surahNum}/${selectedQari}`);
+                            const audioData = await audioRes.json();
+                            const audioAyahs = audioData.data?.ayahs ||audioData.data[0]?.ayahs; //fallback jika API return format lain
+
+                            if (audioData.code === 200 && audioAyahs?.length){
+                                ayahAudios = audioAyahs.map(a => a.audio);
+                            }else{
+                                alert("Audio not available for this reciter.");
+                                return;
+                            }
+                        }
+                        if (!isPaused) ayahIndex = 0; //start dari awal kalau belum pause
+                        playNextAyah();
+                        isPaused = false;
+                }catch(err){
+                    alert("Error loading audio: " + err.message);
+                }
+            });
+
+            //stopkan fully audio
+            stopBtn.addEventListener("click", ()=>{
+                if(currentAudio){
+                    currentAudio.pause();
+                    currentAudio = null;
+                    isPaused = true;
+                }
+            });
+            //resume button
+            resumeBtn.addEventListener("click", () =>{
+                if(!isPaused) return; //kalau tgh main jangan start lagi
+                if(ayahAudios.length ===0){
+                    alert("click play button before starting")
+                    return;
+                }
+                playNextAyah();
+                isPaused = false;
+            })
+            //function untuk auto play
+            function playNextAyah(){
+                if(ayahIndex >= ayahAudios.length) return;//habis semua ayat
+
+                const prev = document.querySelector(".current");
+                if(prev) prev.classList.remove("current");
+    
+                const el = document.querySelector(`[data-ayah="${ayahIndex + 1}"]`);
+                if (el) el.classList.add("current");
+
+                currentAudio = new Audio(ayahAudios[ayahIndex]);
+                currentAudio.play();
+            
+                currentAudio.onended = () =>{
+                    ayahIndex ++;
+                    playNextAyah();
+                };
+            }
+        }
+        fetchSurahDetails();
+    </script>
+</body>
+</html>
